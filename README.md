@@ -2,7 +2,7 @@
 
 > 本文为学习设计模式的先导知识
 
-本文档旨在系统性-地阐述面向对象编程（OOP）的核心思想、设计原则，并在此基础上深入探讨设计模式的价值、实践方法以及与反模式的辨析，帮助开发者在构建高质量、可维护的软件系统中做出更明智的决策。
+本文档旨在系统性地阐述面向对象编程（OOP）的核心思想、设计原则，并在此基础上深入探讨设计模式的价值、实践方法以及与反模式的辨析，帮助开发者在构建高质量、可维护的软件系统中做出更明智的决策。
 
 ---
 
@@ -57,10 +57,413 @@
 * **SOLID 五大基本原则**
 
   1. **单一职责原则 (SRP)**：一个类应该只有一个引起它变化的原因。即一个类只负责一项职责。
+     ```Java
+     // 示例：这个Employee类既负责员工的核心数据，又负责数据库操作，还负责生成报告。职责过于臃肿。
+
+     // 反例：一个类承担了太多职责
+     class Employee {
+         private String name;
+         private double salary;
+
+         public Employee(String name, double salary) {
+             this.name = name;
+             this.salary = salary;
+         }
+
+         // 职责1: 核心业务数据
+         public String getName() {
+             return name;
+         }
+
+         public double getSalary() {
+             return salary;
+         }
+
+         // 职责2: 数据库操作 (不应该在这里)
+         public void saveToDatabase() {
+             System.out.println("Saving " + name + " to the database...");
+             // ... 复杂的数据库连接和保存逻辑
+         }
+
+         // 职责3: 生成报告 (不应该在这里)
+         public String generateReport() {
+             System.out.println("Generating report for " + name + "...");
+             // ... 复杂的报表生成逻辑
+             return "Report data for " + name;
+         }
+     }
+
+     // 问题：如果数据库的连接方式改变，或报告的格式需要修改，都需要修改Employee类。这违反了单一职责原则。
+
+     // 正例：每个类只负责一项职责
+
+     // 1. 只负责员工核心数据的类
+     class Employee {
+         private String name;
+         private double salary;
+
+         public Employee(String name, double salary) {
+             this.name = name;
+             this.salary = salary;
+         }
+
+         public String getName() {
+             return name;
+         }
+
+         public double getSalary() {
+             return salary;
+         }
+     }
+
+     // 2. 只负责数据库操作的类
+     class EmployeeRepository {
+         public void save(Employee employee) {
+             System.out.println("Saving " + employee.getName() + " to the database...");
+             // ... 数据库保存逻辑
+         }
+     }
+
+     // 3. 只负责生成报告的类
+     class EmployeeReportGenerator {
+         public String generate(Employee employee) {
+             System.out.println("Generating report for " + employee.getName() + "...");
+             // ... 报表生成逻辑
+             return "Report data for " + employee.getName();
+         }
+     }
+
+     // 优点：现在，Employee类只关心员工的属性。数据库逻辑的变化只影响EmployeeRepository，报告逻辑的变化只影响EmployeeReportGenerator。代码更加清晰，易于维护。
+     ```
   2. **开闭原则 (OCP)**：软件实体（类、模块、函数等）应该对扩展开放，对修改关闭。即在不修改原有代码的情况下增加新功能。
+     ```java
+     // ShapeCalculator类需要根据不同的形状类型来计算面积。每当增加一种新的形状时，我们都必须修改calculateArea方法，在其中添加一个新的if-else分支。
+
+     // 反例：每次增加新形状，都需要修改这个类
+     class ShapeCalculator {
+         public double calculateArea(Object shape) {
+             if (shape instanceof Rectangle) {
+                 Rectangle rect = (Rectangle) shape;
+                 return rect.getWidth() * rect.getHeight();
+             }
+             if (shape instanceof Circle) {
+                 Circle circle = (Circle) shape;
+                 return Math.PI * circle.getRadius() * circle.getRadius();
+             }
+             // 如果要增加三角形，就必须在这里添加新的 if-else
+             return 0;
+         }
+     }
+
+     class Rectangle {
+         private double width;
+         private double height;
+         // getters...
+     }
+
+     class Circle {
+         private double radius;
+         // getter...
+     }
+
+     // 我们定义一个抽象的Shape接口，让每种具体的形状都去实现它。ShapeCalculator则依赖于这个抽象接口，而不是具体的类。
+
+     // 正例：对扩展开放，对修改封闭
+
+     // 1. 定义一个抽象接口
+     interface Shape {
+         double getArea();
+     }
+
+     // 2. 具体形状实现接口
+     class Rectangle implements Shape {
+         private double width;
+         private double height;
+
+         public Rectangle(double width, double height) {
+             this.width = width;
+             this.height = height;
+         }
+
+         @Override
+         public double getArea() {
+             return width * height;
+         }
+     }
+
+     class Circle implements Shape {
+         private double radius;
+
+         public Circle(double radius) {
+             this.radius = radius;
+         }
+
+         @Override
+         public double getArea() {
+             return Math.PI * radius * radius;
+         }
+     }
+
+     // 3. 计算器依赖于抽象，而不是具体实现
+     class ShapeCalculator {
+         public double calculateArea(Shape shape) {
+             return shape.getArea();
+         }
+     }
+
+     // 当需要增加新形状时，只需新增一个类，不需要修改任何现有代码
+     class Triangle implements Shape {
+         private double base;
+         private double height;
+
+         // constructor...
+
+         @Override
+         public double getArea() {
+             return 0.5 * base * height;
+         }
+     }
+
+     // 优点：现在如果需要增加一个Triangle（三角形），只需创建一个新的Triangle类实现Shape接口即可，完全不需要修改ShapeCalculator类。这正体现了“对修改封闭，对扩展开放”。
+     ```
   3. **里氏替换原则 (LSP)**：所有引用基类的地方必须能透明地使用其子类的对象。即子类必须能够完全替代其父类。
+     ```Java
+     // Square（正方形）继承了Rectangle（矩形）。为了维持“正方形”的特性（边长相等），Square重写了setWidth和setHeight方法，使得这两个方法会同时改变宽和高。这破坏了Rectangle基类的行为约定。
+
+     // 反例：子类破坏了父类的行为约定
+     class Rectangle {
+         protected double width;
+         protected double height;
+
+         public void setWidth(double width) {
+             this.width = width;
+         }
+
+         public void setHeight(double height) {
+             this.height = height;
+         }
+
+         public double getArea() {
+             return width * height;
+         }
+     }
+
+     class Square extends Rectangle {
+         @Override
+         public void setWidth(double width) {
+             this.width = width;
+             this.height = width; // 强制宽高相等
+         }
+
+         @Override
+         public void setHeight(double height) {
+             this.width = height;
+             this.height = height; // 强制宽高相等
+         }
+     }
+
+     class AreaCalculator {
+         public static void test(Rectangle r) {
+             r.setWidth(5);
+             r.setHeight(4);
+             // 根据Rectangle的定义，我们期望面积是 5 * 4 = 20
+             // 但如果传入的是Square，面积会是 4 * 4 = 16
+             if (r.getArea() != 20) {
+                 System.err.println("行为不一致! Area is " + r.getArea());
+             } else {
+                  System.out.println("行为一致。 Area is " + r.getArea());
+             }
+         }
+
+         public static void main(String[] args) {
+             test(new Rectangle()); // 输出: 行为一致。 Area is 20.0
+             test(new Square());    // 输出: 行为不一致! Area is 16.0
+         }
+     }
+
+     // 问题：test方法接收一个Rectangle对象。当传入Square对象时，程序的行为发生了意外的改变。这意味着Square不能安全地替换Rectangle，违反了LSP。
+
+     // 正确的做法是不要让Square继承Rectangle，因为它们的行为约定不一致。可以创建一个更通用的基类或接口，如Shape。
+
+     // 正例：使用抽象来解耦，避免不合适的继承
+
+     interface Shape {
+         double getArea();
+     }
+
+     class Rectangle implements Shape {
+         private double width;
+         private double height;
+
+         public Rectangle(double width, double height) {
+             this.width = width;
+             this.height = height;
+         }
+
+         @Override
+         public double getArea() {
+             return width * height;
+         }
+     }
+
+     class Square implements Shape {
+         private double side;
+
+         public Square(double side) {
+             this.side = side;
+         }
+
+         @Override
+         public double getArea() {
+             return side * side;
+         }
+     }
+
+     // 优点：通过让它们实现共同的接口，我们保留了它们的多态性，同时避免了因不恰当继承而导致的行为不一致问题。
+     ```
   4. **接口隔离原则 (ISP)**：客户端不应该依赖它不需要的接口。一个类对另一个类的依赖应该建立在最小的接口上。
+     ```java
+     // Worker接口包含了work()和eat()两个方法。对于HumanWorker来说没有问题，但对于RobotWorker来说，它不需要eat()方法，却被迫要去实现它。
+
+     // 反例：一个臃肿的接口
+     interface Worker {
+         void work();
+         void eat(); // 不是所有的工人都需要吃东西
+     }
+
+     class HumanWorker implements Worker {
+         @Override
+         public void work() {
+             System.out.println("Human is working.");
+         }
+         @Override
+         public void eat() {
+             System.out.println("Human is eating.");
+         }
+     }
+
+     class RobotWorker implements Worker {
+         @Override
+         public void work() {
+             System.out.println("Robot is working.");
+         }
+         @Override
+         public void eat() {
+             // 机器人不需要吃东西，这个方法是多余的，被迫实现
+             // 只能留空或者抛出异常
+             throw new UnsupportedOperationException("Robot does not eat.");
+         }
+     }
+
+     // 正例：将大接口拆分为多个小接口
+
+     interface Workable {
+         void work();
+     }
+
+     interface Eatable {
+         void eat();
+     }
+
+     // 人类工人需要工作和吃饭
+     class HumanWorker implements Workable, Eatable {
+         @Override
+         public void work() {
+             System.out.println("Human is working.");
+         }
+         @Override
+         public void eat() {
+             System.out.println("Human is eating.");
+         }
+     }
+
+     // 机器人只需要工作
+     class RobotWorker implements Workable {
+         @Override
+         public void work() {
+             System.out.println("Robot is working.");
+         }
+     }
+
+     // 优点：客户端（如RobotWorker）现在只需要实现它真正关心的方法。接口更具针对性，系统的耦合度降低。
+     ```
   5. **依赖倒置原则 (DIP)**：高层模块不应该依赖低层模块，两者都应该依赖其抽象；抽象不应该依赖细节，细节应该依赖抽象。
+     ```java
+     // Notification高层模块直接依赖于EmailNotifier低层模块。
+
+     // 反例：高层模块直接依赖于低层模块的具体实现
+
+     class EmailNotifier { // 低层模块
+         public void sendEmail() {
+             System.out.println("Sending an email notification...");
+         }
+     }
+
+     class Notification { // 高层模块
+         private EmailNotifier emailNotifier;
+
+         public Notification() {
+             this.emailNotifier = new EmailNotifier(); // 直接在这里创建实例
+         }
+
+         public void send() {
+             emailNotifier.sendEmail();
+         }
+     }
+
+     // 问题：如果现在需要增加短信通知（SMS），就必须修改Notification类，在其中加入SmsNotifier的逻辑。这使得Notification类非常僵化，不易扩展。
+
+     // 正例：高层和低层都依赖于抽象
+
+     // 1. 定义抽象接口
+     interface Notifier {
+         void send();
+     }
+
+     // 2. 低层模块实现接口
+     class EmailNotifier implements Notifier {
+         @Override
+         public void send() {
+             System.out.println("Sending an email notification...");
+         }
+     }
+
+     class SmsNotifier implements Notifier {
+         @Override
+         public void send() {
+             System.out.println("Sending an SMS notification...");
+         }
+     }
+
+     // 3. 高层模块依赖于接口
+     class Notification {
+         private Notifier notifier;
+
+         // 依赖通过构造函数注入 (Dependency Injection)
+         public Notification(Notifier notifier) {
+             this.notifier = notifier;
+         }
+
+         public void sendNotification() {
+             notifier.send();
+         }
+     }
+
+     // 客户端代码
+     class Client {
+         public static void main(String[] args) {
+             // 想用邮件就注入EmailNotifier
+             Notification emailNotification = new Notification(new EmailNotifier());
+             emailNotification.sendNotification();
+
+             // 想用短信就注入SmsNotifier
+             Notification smsNotification = new Notification(new SmsNotifier());
+             smsNotification.sendNotification();
+         }
+     }
+
+     // 优点：Notification类不再关心通知的具体实现方式（是邮件还是短信），它只依赖于Notifier这个抽象。这使得系统非常灵活，可以轻松地替换或增加新的通知方式，而无需修改Notification类。这就是“依赖倒置”——控制权从高层模块“倒置”给了外部的客户端。这也是依赖注入（DI）和控制反转（IoC）容器的核心思想。
+     ```
 * **其他设计原则最佳实践**
 
   * **封装变化**：这是几乎所有设计模式背后的核心思想。识别系统中未来可能发生变化的部分，并将其与保持不变的部分隔离开来。
@@ -93,7 +496,7 @@
 
 **设计模式（Design Pattern）** 是在软件设计过程中，针对特定情境下反复出现的问题所提出的、经过验证的、可重用的解决方案。它不是一段可以直接复制粘贴的代码，而是一种解决问题的思想和蓝图。
 
-设计模式的理念源于建筑领域，后被“四人帮”（GoF）在《设计模式：可复用面向对象软件的基础》一书中系统化，成为软件工程的基石。它们通常被分为三大类：
+设计模式的理念源于建筑领域，后被“四人帮”（Gang of Four，GoF）在《设计模式：可复用面向对象软件的基础》一书中系统化，成为软件工程的基石。它们通常被分为三大类：
 
 * **创建型模式（Creational Patterns）**：关注对象的创建过程，将对象的创建与使用解耦。例如：工厂方法、抽象工厂、单例、建造者、原型。
 * **结构型模式（Structural Patterns）**：关注类和对象的组合，通过组合来形成更大的结构。例如：适配器、桥接、组合、装饰器、外观、享元、代理。
