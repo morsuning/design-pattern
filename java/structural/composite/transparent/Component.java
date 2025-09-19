@@ -1,4 +1,4 @@
-package structural.composite;
+package structural.composite.transparent;
 
 /**
  * 组件 (Component)

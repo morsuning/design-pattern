@@ -1,4 +1,4 @@
-package structural.proxy;
+package structural.proxy.staticproxy;
 
 /**
  * 代理 (Proxy)
